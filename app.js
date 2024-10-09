@@ -4,6 +4,7 @@ const cookieParser = require("cookie-parser");
 const errorHandler = require("./middlewares/error.middleware");
 const authRoutes = require("./routes/auth.route");
 const userRoutes = require("./routes/user.route");
+const bookRoutes = require("./routes/book.route");
 const AppError = require("./utils/AppError");
 const { cloudinaryConfig } = require("./utils/cloudinary");
 const app = express();
@@ -28,6 +29,10 @@ app.get("/api/v1", (req, res) => {
     message: `Welcome to ${appName} API version one`,
   });
 });
+
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/books", bookRoutes);
 
 app.all("*", (req, res, next) => {
   const error = new AppError(
