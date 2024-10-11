@@ -14,8 +14,7 @@ const getBooksByAuthor = (author) =>
 
 const getBookById = (id) => Books.findById(id);
 
-const getBookByIdAndAuthor = (id, author) =>
-  Books.findOne({ _id: id, author }).then((book) => book?.toObject());
+const getBookByIdAndAuthor = (id, author) => Books.findOne({ _id: id, author });
 
 const getBookByTitle = (title) =>
   Books.findOne({ title }).then((book) => book?.toObject());

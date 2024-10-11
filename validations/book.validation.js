@@ -8,13 +8,23 @@ const validateBookCreation = (obj) => {
       .required()
       .error(new Error("Book description is required")),
     summary: joi.string(),
-    content: joi
-      .string()
-      .required()
-      .error(new Error("Book content is required")),
     tags: joi.array().items(joi.string()),
     genres: joi.array().items(joi.string()),
     coverImage: joi.string(),
+  });
+  return schema.validate(obj);
+};
+
+const validateChapterCreation = (obj) => {
+  const schema = joi.object({
+    title: joi
+      .string()
+      .required()
+      .error(new Error("Chapter title is required")),
+    content: joi
+      .string()
+      .required()
+      .error(new Error("Chapter content is required")),
   });
   return schema.validate(obj);
 };
@@ -34,7 +44,22 @@ const validateBookStatusUpdate = (obj) => {
   return schema.validate(obj);
 };
 
+const validateBookRating = (obj) => {
+  const schema = joi.object({
+    title: joi.string(),
+    description: joi.string(),
+    summary: joi.string(),
+    content: joi.string(),
+    tags: joi.array().items(joi.string()),
+    genres: joi.array().items(joi.string()),
+    coverImage: joi.string(),
+  });
+  return schema.validate(obj);
+};
+
 module.exports = {
   validateBookCreation,
+  validateChapterCreation,
   validateBookStatusUpdate,
+  validateBookRating,
 };
