@@ -94,6 +94,13 @@ const bookSchema = new mongoose.Schema({
   readTime: {
     type: Number,
   },
+
+  collaborators: [
+    {
+      user: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+      role: { type: String, enum: ["editor", "co-author"], default: "editor" },
+    },
+  ],
 });
 
 bookSchema.virtual("likesCount").get(function () {

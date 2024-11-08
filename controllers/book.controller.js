@@ -13,6 +13,8 @@ const {
 } = require("../validations/book.validation");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/AppError");
+const { uploader } = require("./../utils/cloudinary");
+const { dataUri } = require("./../utils/multer");
 
 const createNewBook = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
@@ -139,8 +141,9 @@ const deleteChapter = catchAsync(async (req, res, next) => {
   });
 });
 
+// Get all published books in the database
 const getAllBooks = catchAsync(async (req, res, next) => {
-  const books = await getBooks();
+  const books = await getBooks().populate("author");
 
   if (books.length === 0) {
     res.status(200).json({
@@ -159,6 +162,7 @@ const getAllBooks = catchAsync(async (req, res, next) => {
   });
 });
 
+// Get all books for the logged in user (author)
 const getAllBooksForAuthor = catchAsync(async (req, res, next) => {
   const userId = req.user._id;
   const books = await getBooksByAuthor(userId);
@@ -182,7 +186,7 @@ const getAllBooksForAuthor = catchAsync(async (req, res, next) => {
 
 const getBookDetails = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const book = await getBookById(id);
+  const book = await getBookById(id).populate("author");
 
   if (!book) {
     return next(new AppError("Book with the specified ID not found", 404));
@@ -330,6 +334,51 @@ const updateBookDetails = catchAsync(async (req, res, next) => {
   });
 });
 
+const uploadBookCoverImage = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const book = await getBookByIdAndAuthor(id, userId);
+
+  if (!book) {
+    return next(
+      new AppError(
+        "Book with the specified ID not found for the user (author)",
+        404
+      )
+    );
+  }
+  console.log(req.file);
+  if (!req.file) {
+    return next(new AppError("Please upload a file", 400));
+  }
+
+  const file = dataUri(req).content;
+
+  const result = await uploader.upload(file, {
+    folder: "bookify/book-covers",
+    secure: true,
+  });
+
+  if (!result) {
+    return next(new AppError("Book cover image could not be uploaded", 400));
+  }
+
+  const updatedBook = await updateBook(id, { coverImage: result.secure_url });
+
+  if (!updatedBook) {
+    return next(new AppError("Book cover image could not be updated", 400));
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "Book cover image updated successfully",
+    data: {
+      book: updatedBook,
+    },
+  });
+});
+
 const userLikeBook = catchAsync(async (req, res, next) => {
   const { id } = req.params;
   const userId = req.user._id;
@@ -456,6 +505,170 @@ const userReviewBook = catchAsync(async (req, res, next) => {
   });
 });
 
+// Collaborative writing aspect
+// Add user as a collaborator to writing a book
+const addBookCollaborator = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+  const { collaboratorId, role } = req.body;
+
+  if (!collaboratorId) {
+    return next(new AppError("User ID for collaborator is required", 400));
+  }
+
+  const book = await getBookByIdAndAuthor(id, userId);
+
+  if (!book) {
+    return next(
+      new AppError(
+        "Book with the specified ID not found for the user (author)",
+        404
+      )
+    );
+  }
+
+  const collaboratorExist = book.collaborators.filter((collaborator) => {
+    return collaborator.user.equals(collaboratorId);
+  });
+
+  if (collaboratorExist.length > 0) {
+    return next(new AppError("User is already a collaborator", 400));
+  }
+
+  book.collaborators.push({
+    user: collaboratorId,
+    role: role ? role : "editor",
+  });
+
+  await book.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Collaborator added successfully",
+    data: {
+      book,
+    },
+  });
+});
+
+const editCollaboratorRole = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+  const { collaboratorId, role } = req.body;
+
+  if (!collaboratorId || !role) {
+    return next(
+      new AppError("User ID and role for collaborator is required", 400)
+    );
+  }
+
+  const book = await getBookByIdAndAuthor(id, userId);
+
+  if (!book) {
+    return next(
+      new AppError(
+        "Book with the specified ID not found for the user (author)",
+        404
+      )
+    );
+  }
+
+  const collaborator = book.collaborators.filter((collaborator) => {
+    return collaborator.user.equals(collaboratorId);
+  });
+
+  if (collaborator.length === 0) {
+    return next(new AppError("User is not a collaborator", 400));
+  }
+
+  if (collaborator[0].role === role) {
+    return next(new AppError("User already has the specified role", 400));
+  }
+
+  collaborator[0].role = role;
+
+  await book.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Collaborator role updated successfully",
+    data: {
+      book,
+    },
+  });
+});
+
+const getAllCollaborators = catchAsync(async (req, res, next) => {
+  const id = req.params.id;
+  const userId = req.user._id;
+
+  const book = await getBookByIdAndAuthor(id, userId)
+    .populate("collaborators.user")
+    .select("-permissions -password -__v  -emailVerified -verificationToken");
+
+  if (!book) {
+    return next(
+      new AppError(
+        "Book with the specified ID not found for the user (author)",
+        404
+      )
+    );
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "Collaborators retrieved successfully",
+    data: {
+      collaborators: book.collaborators,
+    },
+  });
+});
+
+const removeCollaborator = catchAsync(async (req, res, next) => {
+  const id = req.params.id;
+  const userId = req.user._id;
+  const collaboratorId = req.body.collaboratorId;
+
+  const book = await getBookByIdAndAuthor(id, userId);
+
+  if (!book) {
+    return next(
+      new AppError(
+        "Book with the specified ID not found for the user (author)",
+        404
+      )
+    );
+  }
+
+  const collaborator = book.collaborators.filter((collaborator) => {
+    return collaborator.user.equals(collaboratorId);
+  });
+
+  if (collaborator.length === 0) {
+    return next(
+      new AppError(
+        "User with the specified id is is not a collaborator for this book",
+        400
+      )
+    );
+  }
+
+  const newCollaborators = book.collaborators.filter(
+    (collaborator) => !collaborator.user.equals(collaboratorId)
+  );
+
+  book.collaborators = newCollaborators;
+  await book.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Collaborator removed successfully",
+    data: {
+      book,
+    },
+  });
+});
+
 module.exports = {
   createNewBook,
   addNewBookChapter,
@@ -467,8 +680,13 @@ module.exports = {
   getBookDetailsByAuthor,
   updateBookStatus,
   updateBookDetails,
+  uploadBookCoverImage,
   userLikeBook,
   userUnlikeBook,
   userRateBook,
   userReviewBook,
+  addBookCollaborator,
+  editCollaboratorRole,
+  getAllCollaborators,
+  removeCollaborator,
 };

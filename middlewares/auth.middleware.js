@@ -45,7 +45,6 @@ const protectRoute = catchAsync(async (req, res, next) => {
     );
   }
 
-  // If everything checks out
   req.user = currentUser;
   next();
 });

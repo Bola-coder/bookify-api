@@ -8,7 +8,6 @@ const handleCastErrorDB = () => {
 const handleDuplicateValueErrorDB = (err) => {
   const dupKey = Object.keys(err.keyValue)[0];
   const dupValue = Object.values(err.keyValue)[0];
-  console.log(dupValue);
   const message = `${dupKey} with value "${dupValue}"  exist already`;
   return new AppError(message, 400);
 };

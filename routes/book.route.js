@@ -1,7 +1,7 @@
 const express = require("express");
 const bookController = require("../controllers/book.controller");
 const authMiddleware = require("../middlewares/auth.middleware");
-
+const { multerUploads } = require("../utils/multer");
 const router = express.Router();
 
 router.get("/", bookController.getAllBooks);
@@ -18,6 +18,15 @@ router.get("/author/all", bookController.getAllBooksForAuthor);
 router.get("/author/:id", bookController.getBookDetailsByAuthor);
 router.patch("/author/:id", bookController.updateBookDetails);
 router.patch("/author/status/:id", bookController.updateBookStatus);
+router.post(
+  "/author/cover-image/:id",
+  multerUploads,
+  bookController.uploadBookCoverImage
+);
+router.post("/author/collaborator/:id", bookController.addBookCollaborator);
+router.patch("/author/collaborator/:id", bookController.editCollaboratorRole);
+router.get("/author/collaborator/:id", bookController.getAllCollaborators);
+router.delete("/author/collaborator/:id", bookController.removeCollaborator);
 
 // Users
 router.post("/like/:id", bookController.userLikeBook);
