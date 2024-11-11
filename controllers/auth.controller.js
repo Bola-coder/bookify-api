@@ -179,10 +179,18 @@ const logout = async (req, res) => {
     .json({ message: "Successfully logged out " });
 };
 
+const checkAuthStatus = catchAsync(async (req, res, next) => {
+  res.status(200).json({
+    status: "success",
+    message: "User is authenticated",
+  });
+});
+
 module.exports = {
   signup,
   login,
   resendEmailVerificationToken,
   verifyUserEmail,
   logout,
+  checkAuthStatus,
 };

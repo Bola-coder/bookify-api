@@ -5,6 +5,7 @@ const { multerUploads } = require("../utils/multer");
 const router = express.Router();
 
 router.get("/", bookController.getAllBooks);
+router.get("/search", bookController.searchForBookByTtileOrDescription);
 router.get("/:id", bookController.getBookDetails);
 
 // Protected routes

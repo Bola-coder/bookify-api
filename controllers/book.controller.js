@@ -5,6 +5,7 @@ const {
   getBookById,
   getBookByIdAndAuthor,
   updateBook,
+  getBooksBasedOnQuery,
 } = require("../repositories/book.repository");
 const {
   validateBookCreation,
@@ -392,7 +393,7 @@ const userLikeBook = catchAsync(async (req, res, next) => {
   const userLikeExist = book.likes.filter((like) => like._id.equals(userId));
   console.log(userLikeExist);
   if (userLikeExist.length > 0) {
-    return next(new AppError("You haves already liked this book", 400));
+    return next(new AppError("You have already liked this book", 400));
   }
 
   book.likes.push(userId);
@@ -669,6 +670,33 @@ const removeCollaborator = catchAsync(async (req, res, next) => {
   });
 });
 
+// Searching and filtering books
+const searchForBookByTtileOrDescription = catchAsync(async (req, res, next) => {
+  const { query } = req.query;
+  const books = await getBooksBasedOnQuery({
+    $or: [
+      { title: { $regex: query, $options: "i" } },
+      { description: { $regex: query, $options: "i" } },
+    ],
+  });
+
+  if (books.length === 0) {
+    res.status(200).json({
+      status: "success",
+      message: "No books found",
+    });
+  }
+
+  res.status(200).json({
+    status: "success",
+    result: books.length,
+    message: "Books retrieved successfully",
+    data: {
+      books,
+    },
+  });
+});
+
 module.exports = {
   createNewBook,
   addNewBookChapter,
@@ -689,4 +717,5 @@ module.exports = {
   editCollaboratorRole,
   getAllCollaborators,
   removeCollaborator,
+  searchForBookByTtileOrDescription,
 };

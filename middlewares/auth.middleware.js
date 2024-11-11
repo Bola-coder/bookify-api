@@ -24,7 +24,15 @@ const protectRoute = catchAsync(async (req, res, next) => {
   }
 
   // Verifying token
-  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  let decoded;
+  try {
+    decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  } catch (error) {
+    console.log("Error: ", error);
+    return next(
+      new AppError("Invalid token, please login again to get a new token", 401)
+    );
+  }
 
   // Checking if user still exists
   const id = decoded.id;

@@ -4,7 +4,7 @@ const createBook = (values) => {
   return new Books(values).save();
 };
 
-const getBooks = () => Books.find({ status: "published" });
+const getBooks = (query) => Books.find({ status: "published" });
 
 const getBooksByAuthor = (author) => Books.find({ author });
 
@@ -14,6 +14,8 @@ const getBookByIdAndAuthor = (id, author) => Books.findOne({ _id: id, author });
 
 const getBookByTitle = (title) =>
   Books.findOne({ title }).then((book) => book?.toObject());
+
+const getBooksBasedOnQuery = (query) => Books.find(query);
 
 const updateBook = (id, values) =>
   Books.findByIdAndUpdate(id, values, {
@@ -31,6 +33,7 @@ module.exports = {
   getBookByIdAndAuthor,
   getBookByTitle,
   getBooksByAuthor,
+  getBooksBasedOnQuery,
   updateBook,
   deleteBook,
 };

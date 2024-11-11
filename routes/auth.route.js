@@ -12,5 +12,10 @@ router
   .get(authcontroller.verifyUserEmail);
 router.post("/verify/resend/", authcontroller.resendEmailVerificationToken);
 router.get("/logout", authMiddleware.protectRoute, authcontroller.logout);
+router.get(
+  "/check-auth",
+  authMiddleware.protectRoute,
+  authcontroller.checkAuthStatus
+);
 
 module.exports = router;
