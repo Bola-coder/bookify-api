@@ -13,7 +13,7 @@ const { getBookById } = require("./../repositories/book.repository");
 const createBookmarkCollection = async (userId) => {
   try {
     const data = {
-      title: "Bookmark",
+      title: "Bookmarks",
       description: "The default bookmark collection",
       user: userId,
       deletable: false,
@@ -72,7 +72,7 @@ const addBookToACollection = catchAsync(async (req, res, next) => {
     );
   }
 
-  console.log(collectionId, userId);
+  console.log(collectionId, userId, bookId);
 
   const collection = await getUserCollectionById(collectionId, userId);
 
@@ -226,6 +226,38 @@ const updateCollectionDetails = catchAsync(async (req, res, next) => {
   });
 });
 
+const emptyCollection = catchAsync(async (req, res, next) => {
+  const userId = req.user.id;
+  const { id } = req.params;
+
+  if (!id) {
+    return next(new AppError("Please provide the collection id"));
+  }
+
+  const collection = await getUserCollectionById(id, userId);
+
+  if (!collection) {
+    return next(
+      new AppError("Collection with the specified ID not found", 404)
+    );
+  }
+
+  if (collection.books.length === 0) {
+    return next(new AppError("Collection is already empty", 400));
+  }
+
+  collection.books = [];
+  await updateCollection(id, collection).populate("books");
+
+  res.status(200).json({
+    status: "success",
+    message: "Collection emptied successfully",
+    data: {
+      collection,
+    },
+  });
+});
+
 const removeCollection = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
   const { id } = req.params;
@@ -274,5 +306,6 @@ module.exports = {
   removeBookFromACollection,
   getColletionDetails,
   updateCollectionDetails,
+  emptyCollection,
   removeCollection,
 };

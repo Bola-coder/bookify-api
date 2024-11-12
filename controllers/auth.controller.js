@@ -196,5 +196,4 @@ module.exports = {
   verifyUserEmail,
   logout,
   checkAuthStatus,
-  createMyBookmarkCollection,
 };

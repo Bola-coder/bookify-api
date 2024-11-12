@@ -28,4 +28,8 @@ router
   )
   .delete(authMiddleware.protectRoute, collectionController.removeCollection);
 
+router
+  .route("/empty/:id")
+  .patch(authMiddleware.protectRoute, collectionController.emptyCollection);
+
 module.exports = router;
