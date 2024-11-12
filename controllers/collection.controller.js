@@ -10,6 +10,21 @@ const {
 } = require("./../repositories/collection.repository");
 const { getBookById } = require("./../repositories/book.repository");
 
+const createBookmarkCollection = async (userId) => {
+  try {
+    const data = {
+      title: "Bookmark",
+      description: "The default bookmark collection",
+      user: userId,
+      deletable: false,
+    };
+    const collection = await createCollection(data);
+    return collection;
+  } catch (error) {
+    return new AppError("Collection not created", 400);
+  }
+};
+
 const createNewCollection = catchAsync(async (req, res, next) => {
   const userId = req.user.id;
   const { title, description } = req.body;
@@ -227,6 +242,12 @@ const removeCollection = catchAsync(async (req, res, next) => {
     );
   }
 
+  if (!collection.deletable) {
+    return next(
+      new AppError("You are not allowed to delete this collection", 400)
+    );
+  }
+
   if (collection.books.length > 0) {
     return next(
       new AppError(
@@ -246,6 +267,7 @@ const removeCollection = catchAsync(async (req, res, next) => {
 });
 
 module.exports = {
+  createBookmarkCollection,
   createNewCollection,
   getAllCollections,
   addBookToACollection,

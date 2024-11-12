@@ -14,6 +14,7 @@ const { compareEncryptedString } = require("../utils/encryption");
 const {
   createVerificationTokenAndSendToEmail,
 } = require("../utils/createVerificationToken");
+const { createBookmarkCollection } = require("./collection.controller");
 
 // Signup function
 const signup = catchAsync(async (req, res, next) => {
@@ -60,6 +61,8 @@ const signup = catchAsync(async (req, res, next) => {
   const user = await updateUserById(newUser._id, {
     verificationToken: hashedVerificationToken,
   });
+
+  await createBookmarkCollection(newUser._id);
 
   const token = signJWTToken(newUser._id);
   res.status(200).json({
@@ -193,4 +196,5 @@ module.exports = {
   verifyUserEmail,
   logout,
   checkAuthStatus,
+  createMyBookmarkCollection,
 };

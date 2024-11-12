@@ -25,10 +25,9 @@ const collectionSchema = new mongoose.Schema(
       },
     ],
 
-    type: {
-      type: String,
-      enum: ["public", "private"],
-      default: "private",
+    deletable: {
+      type: Boolean,
+      default: true,
     },
 
     coverImage: {
