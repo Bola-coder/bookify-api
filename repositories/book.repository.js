@@ -15,7 +15,11 @@ const getBookByIdAndAuthor = (id, author) => Books.findOne({ _id: id, author });
 const getBookByTitle = (title) =>
   Books.findOne({ title }).then((book) => book?.toObject());
 
-const getBooksBasedOnQuery = (query) => Books.find(query);
+const getBooksBasedOnQuery = (query) =>
+  Books.find({
+    status: "published",
+    ...query,
+  });
 
 const updateBook = (id, values) =>
   Books.findByIdAndUpdate(id, values, {

@@ -73,14 +73,14 @@ const bookSchema = new mongoose.Schema({
 
   ratings: [
     {
-      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      userId: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
       rating: { type: Number, min: 1, max: 5 },
     },
   ],
 
   reviews: [
     {
-      userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      user: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
       comment: { type: String, trim: true },
       createdAt: { type: Date, default: Date.now },
     },
@@ -94,6 +94,14 @@ const bookSchema = new mongoose.Schema({
   readTime: {
     type: Number,
   },
+
+  readers: [
+    {
+      user: { type: mongoose.Schema.Types.ObjectId, ref: "Users" },
+      isFinished: { type: Boolean, default: false },
+      lastReadAt: { type: Date, default: Date.now },
+    },
+  ],
 
   collaborators: [
     {

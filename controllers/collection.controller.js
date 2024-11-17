@@ -171,7 +171,12 @@ const getColletionDetails = catchAsync(async (req, res, next) => {
     return next(new AppError("Please provide the collection id"));
   }
 
-  const collection = await getUserCollectionById(id, userId).populate("books");
+  const collection = await getUserCollectionById(id, userId).populate({
+    path: "books",
+    populate: {
+      path: "author",
+    },
+  });
 
   if (!collection) {
     return next(

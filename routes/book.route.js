@@ -11,7 +11,7 @@ router.get("/:id", bookController.getBookDetails);
 // Protected routes
 router.use(authMiddleware.protectRoute, authMiddleware.checkIfEmailIsVerified);
 // Author
-router.post("/", bookController.createNewBook);
+router.post("/", multerUploads, bookController.createNewBook);
 router.post("/author/chapter/:id", bookController.addNewBookChapter);
 router.patch("/author/chapter/:id/:chapterId", bookController.updateChapter);
 router.delete("/author/chapter/:id/:chapterId", bookController.deleteChapter);
@@ -34,5 +34,7 @@ router.post("/like/:id", bookController.userLikeBook);
 router.post("/unlike/:id", bookController.userUnlikeBook);
 router.post("/rate/:id", bookController.userRateBook);
 router.post("/review/:id", bookController.userReviewBook);
+router.post("/read/:id", bookController.userReadBook);
+router.post("/complete/:id", bookController.userCompleteBook);
 
 module.exports = router;

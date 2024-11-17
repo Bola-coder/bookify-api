@@ -24,7 +24,27 @@ const createNewBook = catchAsync(async (req, res, next) => {
     return next(new AppError(error.message, 400));
   }
 
-  const book = await createBook({ ...req.body, author: userId });
+  console.log(req.file);
+  console.log(req.body);
+  if (!req.file) {
+    return next(new AppError("Please upload a coverImage", 400));
+  }
+  const content = dataUri(req).content;
+
+  const result = uploader.upload(content, {
+    folder: "bookify/book-covers",
+    secure: true,
+  });
+
+  if (!result) {
+    return next(new AppError("Error while uploading book cover", 404));
+  }
+
+  const book = await createBook({
+    ...req.body,
+    author: userId,
+    coverImage: (await result).secure_url,
+  });
 
   if (!book) {
     return next(new AppError("Book not found", 404));
@@ -175,19 +195,27 @@ const getAllBooksForAuthor = catchAsync(async (req, res, next) => {
     });
   }
 
+  const publishedBooks = books.filter((book) => book.status === "published");
+  const drafts = books.filter((book) => book.status === "draft");
+  const archivedBooks = books.filter((book) => book.status === "archived");
+
   res.status(200).json({
     status: "success",
     result: books.length,
     message: "Author's Books retrieved successfully",
     data: {
-      books,
+      publishedBooks,
+      drafts,
+      archivedBooks,
     },
   });
 });
 
 const getBookDetails = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const book = await getBookById(id).populate("author");
+  const book = await getBookById(id)
+    .populate("author")
+    .populate("reviews.user");
 
   if (!book) {
     return next(new AppError("Book with the specified ID not found", 404));
@@ -493,13 +521,78 @@ const userReviewBook = catchAsync(async (req, res, next) => {
     return next(new AppError("Book not found", 404));
   }
 
-  book.reviews.push({ userId, comment });
+  if (book.author.equals(userId)) {
+    return next(new AppError("You cannot review your own book", 400));
+  }
+
+  book.reviews.push({ user: userId, comment });
 
   await book.save();
 
   res.status(200).json({
     status: "success",
     message: "Book reviewed successfully",
+    data: {
+      book,
+    },
+  });
+});
+
+const userReadBook = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const book = await getBookById(id);
+
+  if (!book) {
+    return next(new AppError("Book not found", 404));
+  }
+
+  const userReaderIndex = book.readers.findIndex((reader) =>
+    reader.user.equals(userId)
+  );
+
+  if (userReaderIndex === -1) {
+    book.readers.push({ user: userId, lastReadAt: new Date() });
+  } else {
+    book.readers[userReaderIndex].lastReadAt = new Date();
+  }
+
+  await book.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Book read successfully",
+    data: {
+      book,
+    },
+  });
+});
+
+const userCompleteBook = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const userId = req.user._id;
+
+  const book = await getBookById(id);
+
+  if (!book) {
+    return next(new AppError("Book not found", 404));
+  }
+
+  const userReaderIndex = book.readers.findIndex((reader) =>
+    reader.user.equals(userId)
+  );
+
+  if (userReaderIndex === -1) {
+    return next(new AppError("You have not read this book", 400));
+  }
+
+  book.readers[userReaderIndex].isFinished = true;
+  await book.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Book completed successfully",
     data: {
       book,
     },
@@ -713,6 +806,8 @@ module.exports = {
   userUnlikeBook,
   userRateBook,
   userReviewBook,
+  userReadBook,
+  userCompleteBook,
   addBookCollaborator,
   editCollaboratorRole,
   getAllCollaborators,
